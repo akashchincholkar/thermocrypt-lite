@@ -1,8 +1,6 @@
 # ThermoCrypt Lite v1.0.0 - Build Guide
 
-## Quick Start
-
-### Linux (Debian/Ubuntu)
+## Linux (Debian/Ubuntu)
 
 ```bash
 # 1. Install dependencies
@@ -29,7 +27,7 @@ g++ -o thermo_core thermo_core.cpp \
 ./thermo_core --help
 ```
 
-## Linux with TPM Support
+### Linux with TPM Support
 
 ```bash
 # Additional dependency
@@ -45,7 +43,7 @@ g++ -o thermo_core thermo_core.cpp \
     -ltss2-esys -ltss2-mu -ltss2-tctildr
 ```
 
-## Production Build (Hardened)
+### Production Build (Hardened)
 
 ```bash
 g++ -o thermo_core thermo_core.cpp \
@@ -58,7 +56,7 @@ g++ -o thermo_core thermo_core.cpp \
     /usr/local/lib/liboqs.a -lsodium -lpthread
 ```
 
-### Windows (MSYS2/MinGW64)
+## Windows (MSYS2/MinGW64)
 
 ```bash
 # In MSYS2 MinGW64 shell
@@ -75,7 +73,7 @@ g++ -o thermo_core.exe thermo_core.cpp \
     -loqs -lsodium -lws2_32 -lbcrypt
 ```
 
-### Running the GUI
+## Running the GUI
 
 ```bash
 # Ensure Python 3.8+ with Tkinter
@@ -85,7 +83,7 @@ python3 thermo_gui.py
 python thermo_gui.py
 ```
 
-### Testing
+## Testing
 
 ```bash
 # Generate test identity
@@ -98,9 +96,9 @@ echo "Hello, quantum world!" | ./thermo_core --encrypt-armor testuser.thermoid >
 cat encrypted.txt | ./thermo_core --decrypt-armor testuser
 ```
 
-### Troubleshooting
+## Troubleshooting
 
-## "liboqs.a: No such file"
+### "liboqs.a: No such file"
 
 ```bash
 # Check liboqs installation
@@ -109,13 +107,13 @@ ls /usr/local/lib/liboqs.a
 # If missing, rebuild liboqs with -DBUILD_SHARED_LIBS=OFF
 ```
 
-## "sodium.h: No such file"
+### "sodium.h: No such file"
 
 ```bash
 sudo apt install libsodium-dev
 ```
 
-## TPM errors on Linux
+### TPM errors on Linux
 
 ```bash
 # Check TPM availability
