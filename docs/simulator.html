@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ThermoCrypt Lite Simulator</title>
+    <style>
+        :root {
+            /* Palette */
+            --bg-root: #0b0d14;
+            --bg-panel: #11141d;
+            --bg-term: #0d1117;
+            --border: #2d3748;
+            
+            /* Accents */
+            --accent: #38bdf8;       /* Cyan */
+            --accent-dim: rgba(56, 189, 248, 0.1);
+            --success: #10b981;      /* Green */
+            --warning: #f59e0b;      /* Orange */
+            --danger: #ef4444;       /* Red */
+            --purple: #a855f7;       /* Purple */
+            
+            /* Text */
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            
+            /* Fonts */
+            --font-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+            --font-sans: -apple-system, BlinkMacSystemFont, "Inter", Roboto, sans-serif;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-root);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* --- LAYOUT --- */
+        #app-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        #sim-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 25px;
+            border-right: 1px solid var(--border);
+            position: relative;
+            background: radial-gradient(circle at top right, #1a202c 0%, #0b0d14 70%);
+            min-height: 0;
+        }
+
+        #info-pane {
+            width: 600px;
+            background-color: var(--bg-panel);
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid var(--border);
+            min-height: 0;
+            box-shadow: -5px 0 20px rgba(0,0,0,0.3);
+        }
+
+        /* --- TERMINAL WINDOW --- */
+        #term-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-term);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+            overflow: hidden;
+            margin-bottom: 25px;
+            font-family: var(--font-mono);
+        }
+
+        #term-header {
+            background-color: #161b22;
+            padding: 8px 15px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        .dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+        .red { background: #ef4444; } .yellow { background: #eab308; } .green { background: #22c55e; }
+
+        #term-body {
+            flex: 1;
+            padding: 20px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #c9d1d9;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        /* Terminal Text Styles */
+        .ts { color: #57606a; margin-right: 10px; user-select: none; } /* Timestamp */
+        .t-cmd { color: #f8fafc; font-weight: bold; }
+        .t-prompt { color: #10b981; margin-right: 8px; font-weight: bold; }
+        .t-sys { color: #7dd3fc; } /* System/Kernel */
+        .t-io { color: #fcd34d; }  /* File IO */
+        .t-cry { color: #d8b4fe; } /* Crypto Ops */
+        .t-ok { color: #10b981; font-weight: bold; }
+        .t-err { color: #ef4444; font-weight: bold; }
+        .t-out { color: #a5b4fc; display: block; margin: 5px 0 5px 20px; border-left: 2px solid #a5b4fc; padding-left: 10px; }
+
+        /* --- CONTROLS --- */
+        #controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        button.btn {
+            padding: 16px 32px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex: 1;
+            max-width: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: #0f172a;
+            border: none;
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.2);
+        }
+        .btn-primary:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(56, 189, 248, 0.4); }
+        .btn-secondary { background: #1e293b; color: var(--text-muted); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: #2d3748; color: #fff; }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+        /* --- INFO PANE --- */
+        #info-header {
+            padding: 25px 30px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(17, 20, 29, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 10;
+        }
+
+        #step-badge {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 5px 12px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            background: #1e293b;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+        }
+
+        /* Phase Colors */
+        .phase-init { border-color: #64748b; color: #94a3b8; }
+        .phase-gen { border-color: var(--success); color: var(--success); background: rgba(16, 185, 129, 0.1); }
+        .phase-enc { border-color: var(--accent); color: var(--accent); background: rgba(56, 189, 248, 0.1); }
+        .phase-dec { border-color: var(--warning); color: var(--warning); background: rgba(245, 158, 11, 0.1); }
+
+        h1 { margin: 0; font-size: 1.8rem; line-height: 1.2; letter-spacing: -0.02em; color: #fff; }
+
+        #info-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+        }
+
+        /* --- CARDS --- */
+        .card {
+            margin: 25px 30px;
+            background: #161b22;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card-header {
+            padding: 12px 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #2d3748;
+        }
+
+        .card-body { padding: 20px; }
+
+        /* Card Variants */
+        .t-concept .card-header { background: rgba(168, 85, 247, 0.1); color: var(--purple); border-top: 2px solid var(--purple); }
+        .t-code .card-header { background: rgba(56, 189, 248, 0.1); color: var(--accent); border-top: 2px solid var(--accent); }
+        .t-security .card-header { background: rgba(239, 68, 68, 0.1); color: var(--danger); border-top: 2px solid var(--danger); }
+
+        p { margin: 0 0 15px 0; line-height: 1.7; font-size: 0.95rem; color: #cbd5e1; }
+        
+        /* Code Blocks */
+        .code-wrap {
+            background: #0d1117;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #30363d;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: #e6edf3;
+            overflow-x: auto;
+        }
+
+        /* C++ Syntax Highlighting */
+        .k { color: #ff7b72; } /* Keyword */
+        .f { color: #d2a8ff; } /* Function */
+        .t { color: #79c0ff; } /* Type */
+        .s { color: #a5d6ff; } /* String */
+        .c { color: #8b949e; font-style: italic; } /* Comment */
+        .n { color: #79c0ff; } /* Number */
+
+        /* --- MOBILE TABS --- */
+        #mobile-tabs {
+            display: none;
+            height: 65px;
+            background: #0d1117;
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+            z-index: 100;
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        .tab-btn.active { color: var(--accent); background: rgba(56, 189, 248, 0.05); }
+        .tab-icon { font-size: 1.2rem; }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 900px) {
+            #app-container { flex-direction: column; }
+            #sim-pane, #info-pane { width: 100%; height: 100%; position: absolute; top: 0; left: 0; padding: 0; border: none; }
+            #sim-pane { z-index: 2; padding: 15px; padding-bottom: 80px; }
+            #info-pane { z-index: 1; display: none; padding-bottom: 80px; }
+            #mobile-tabs { display: flex; position: absolute; bottom: 0; width: 100%; }
+            #term-wrapper { margin-bottom: 20px; }
+            #controls { width: 100%; gap: 10px; }
+            .btn { padding: 14px; }
+            #info-header { padding: 20px; }
+            .card { margin: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+        
+        <!-- SIMULATION -->
+        <div id="sim-pane">
+            <div id="term-wrapper">
+                <div id="term-header">
+                    <div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div>
+                    <span style="margin-left: 10px;">thermo_core — bash — 80x24</span>
+                </div>
+                <div id="term-body">
+                    <div style="margin-bottom: 20px; color: #fff;">
+                        ThermoCrypt Lite v1.0.0<br>
+                        <span style="color:#64748b"> Interactive Architecture Simulator</span>
+                    </div>
+                    <div id="term-content"></div>
+                </div>
+            </div>
+
+            <div id="controls">
+                <button id="btn-next" class="btn btn-primary" onclick="nextStep()">
+                    Start Simulation
+                </button>
+                <button id="btn-reset" class="btn btn-secondary" onclick="resetSim()">
+                    Reset
+                </button>
+            </div>
+        </div>
+
+        <!-- ENCYCLOPEDIA -->
+        <div id="info-pane">
+            <div id="info-header">
+                <span id="step-badge" class="phase-init">System Idle</span>
+                <h1 id="info-title">Welcome</h1>
+            </div>
+            <div id="info-content">
+                <div class="card t-concept">
+                    <div class="card-header">ℹ️ About</div>
+                    <div class="card-body">
+                        <p>This tool visualizes the internal logic of <strong>ThermoCrypt Lite</strong>. It simulates the exact C++ function calls, memory operations, and cryptographic handshakes used in the production code.</p>
+                        <p><strong>Instructions:</strong> Click "Start Simulation" to step through the lifecycle of a message.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MOBILE NAV -->
+    <div id="mobile-tabs">
+        <button class="tab-btn active" onclick="switchTab('sim')" id="tab-sim">
+            <span class="tab-icon">💻</span> Terminal
+        </button>
+        <button class="tab-btn" onclick="switchTab('info')" id="tab-info">
+            <span class="tab-icon">🧠</span> Deep Dive <span id="badge" style="background:var(--accent);width:6px;height:6px;border-radius:50%;display:none;"></span>
+        </button>
+    </div>
+
+    <script>
+        // --- CONTENT DATABASE ---
+        const steps = [
+            // 1. INIT
+            {
+                phase: "INIT", badgeClass: "phase-init",
+                title: "Memory Lockdown",
+                cmd: "./thermo_core --gen alice",
+                logs: [
+                    { type: "t-sys", text: "[KERNEL] mlockall(MCL_CURRENT | MCL_FUTURE) ... OK" },
+                    { type: "t-sys", text: "[KERNEL] setrlimit(RLIMIT_CORE, 0) ... OK" },
+                    { type: "t-sys", text: "[KERNEL] ptrace(PTRACE_TRACEME) ... OK" },
+                    { type: "t-ok", text: "[VERIFY] OQS_KEM_alg_is_enabled(ML-KEM-768) ... OK" },
+                    { type: "t-ok", text: "[MEM] SodiumAllocator initialized. Swap disabled." }
+                ],
+                html: `
+                    <div class="card t-concept">
+                        <div class="card-header">🧠 Concept: Anti-Forensics</div>
+                        <div class="card-body">
+                            <p>Before the program even parses the user's input, it must secure the operating environment. A standard OS will "swap" idle memory pages to the hard drive to free up RAM. If sensitive keys are in those pages, they are written to disk in plaintext, recoverable by forensic analysts years later.</p>
+                        </div>
+                    </div>
+                    <div class="card t-code">
+                        <div class="card-header">💾 C++ Code (main.cpp)</div>
+                        <div class="card-body"><div class="code-wrap">
+<span class="k">int</span> <span class="f">main</span>() {
+    <span class="c">// 1. Pin RAM to prevent swapping</span>
+    <span class="f">mlockall</span>(MCL_CURRENT | MCL_FUTURE);
+    
+    <span class="c">// 2. Disable Core Dumps (Crash logs)</span>
+    <span class="t">rlimit</span> l = {<span class="n">0</span>, <span class="n">0</span>};
+    <span class="f">setrlimit</span>(RLIMIT_CORE, &l);
+    
+    <span class="c">// 3. Block Debuggers</span>
+    <span class="f">ptrace</span>(PTRACE_TRACEME, <span class="n">0</span>, <span class="n">0</span>, <span class="n">0</span>);
+}
+                        </div></div>
+                    </div>
+                    <div class="card t-security">
+                        <div class="card-header">🛡️ Security Impact</div>
+                        <div class="card-body">
+                            <p><strong>Defense:</strong> Mitigates Cold Boot Attacks, Swap File Analysis, and Core Dump Leaks.</p>
+                            <p><strong>Why:</strong> Even if the attacker has physical access to the hard drive after power-off, the keys are gone because they never touched the disk platter.</p>
+                        </div>
+                    </div>`
+            },
+            // 2. KEYGEN
+            {
+                phase: "GENERATION", badgeClass: "phase-gen",
+                title: "Hybrid KeyGen",
+                cmd: "Generating Identity...",
+                logs: [
+                    { type: "t-cry", text: "> Generating ML-KEM-768 keypair... [Lattice]" },
+                    { type: "t-cry", text: "> Generating X25519 keypair... [ECC]" },
+                    { type: "t-cry", text: "> Generating ML-DSA-65 keypair... [Signature]" },
+                    { type: "t-sys", text: "[MEM] Keys stored in SecureByteVec (Guarded Heap)" }
+                ],
+                html: `
+                    <div class="card t-concept">
+                        <div class="card-header">🧠 Concept: Hybrid Crypto</div>
+                        <div class="card-body"><p>We define "Defense in Depth" by generating keys for two different mathematical problems: <strong>Kyber</strong> (Post-Quantum) and <strong>X25519</strong> (Classical). If one fails, the other protects the data.</p></div>
+                    </div>
+                    <div class="card t-code">
+                        <div class="card-header">💾 C++ Code</div>
+                        <div class="card-body"><div class="code-wrap">
+<span class="t">SecureByteVec</span> kyber_sk(KYBER_SK_LEN);
+<span class="t">SecureByteVec</span> x25519_sk(<span class="n">32</span>);
+
+<span class="c">// Liboqs (NIST FIPS 203)</span>
+<span class="f">OQS_KEM_keypair</span>(kem, kyber_pk.<span class="f">data</span>(), kyber_sk.<span class="f">data</span>());
+
+<span class="c">// Libsodium (RFC 7748)</span>
+<span class="f">crypto_box_keypair</span>(x25519_pk.<span class="f">data</span>(), x25519_sk.<span class="f">data</span>());
+                        </div></div>
+                    </div>
+                    <div class="card t-security">
+                        <div class="card-header">🛡️ Security Impact</div>
+                        <div class="card-body">
+                            <p><strong>Defense:</strong> "Harvest Now, Decrypt Later" protection.</p>
+                            <p><strong>Why:</strong> If a mathematical breakthrough breaks Kyber next year, the X25519 layer still protects the data. If Quantum Computers arrive in 2030, Kyber protects the data. The attacker must break BOTH to succeed.</p>
+                        </div>
+                    </div>`
+            },
+            // 3. VAULT
+            {
+                phase: "GENERATION", badgeClass: "phase-gen",
+                title: "Sealing the Vault",
+                cmd: "Persisting...",
+                logs: [
+                    { type: "t-sys", text: "[POLICY] Password validated (min 8 chars, complexity OK)." },
+                    { type: "t-cry", text: "[SIG] Public keys signed by Dilithium." },
+                    { type: "t-cry", text: "> Generated 32-byte DEK (Data Encryption Key)." },
+                    { type: "t-cry", text: "[ENC] Private keys encrypted with XChaCha20." },
+                    { type: "t-io", text: "[IO] Atomic Write: 'alice.thermoid' (Public)" },
+                    { type: "t-io", text: "[IO] Atomic Write: 'resonance.vault' (Private)" }
+                ],
+                html: `
+                    <div class="card t-concept">
+                        <div class="card-header">🧠 Concept: Atomic I/O</div>
+                        <div class="card-body"><p>We encrypt the private keys with a random DEK, then encrypt the DEK with the user's password. When saving, we use atomic file flags to prevent TOCTOU (Time-Of-Check Time-Of-Use) attacks.</p></div>
+                    </div>
+                    <div class="card t-code">
+                        <div class="card-header">💾 C++ Code</div>
+                        <div class="card-body"><div class="code-wrap">
+<span class="c">// Prevent Symlink Attacks (Linux)</span>
+<span class="k">int</span> fd = <span class="f">open</span>(path, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW, <span class="n">0600</span>);
+
+<span class="k">if</span> (fd < <span class="n">0</span> && errno == ELOOP) 
+    <span class="k">throw</span> <span class="f">runtime_error</span>(<span class="s">"Symlink attack detected!"</span>);
+                        </div></div>
+                    </div>
+                    <div class="card t-security">
+                        <div class="card-header">🛡️ Security Impact</div>
+                        <div class="card-body">
+                            <p><strong>Defense:</strong> TOCTOU & Symlink Attacks.</p>
+                            <p><strong>Why:</strong> Without <code>O_NOFOLLOW</code>, an attacker could trick the program into overwriting <code>/etc/passwd</code> by placing a symlink at the output path the moment before we write to it.</p>
+                        </div>
+                    </div>`
+            },
+            // 4. ENCRYPT START
+            {
+                phase: "ENCRYPTION", badgeClass: "phase-enc",
+                title: "Zero-Copy Input",
+                cmd: "echo 'Secrets' | ./thermo_core --encrypt",
+                logs: [
+                    { type: "t-io", text: "> Reading recipient 'alice.thermoid'..." },
+                    { type: "t-ok", text: "[VERIFY] OQS_SIG_verify(Dilithium) ... OK." },
+                    { type: "t-sys", text: "[LIMIT] Input size check (max 64 MB)... OK." },
+                    { type: "t-sys", text: "> Streaming stdin -> SecureByteVec..." },
+                    { type: "t-ok", text: "[MEM] Zero-Copy Stream initialized." }
+                ],
+                html: `
+                    <div class="card t-concept">
+                        <div class="card-header">🧠 Concept: Secure Pipeline</div>
+                        <div class="card-body"><p>Standard apps copy input into strings, then buffers, leaving multiple copies in RAM. ThermoCrypt streams data directly into locked memory using a custom <code>std::streambuf</code> implementation.</p></div>
+                    </div>
+                    <div class="card t-code">
+                        <div class="card-header">💾 C++ Code</div>
+                        <div class="card-body"><div class="code-wrap">
+<span class="c">// Read directly to locked RAM</span>
+<span class="t">SecureByteVec</span> pt = <span class="f">read_stdin_limited</span>();
+
+<span class="c">// Wrap memory address as a stream</span>
+<span class="t">SecureVectorStream</span> <span class="f">is</span>(pt);
+
+<span class="c">// Pass stream to engine (No Copying)</span>
+<span class="f">encrypt_stream_v3</span>(is, ...);
+                        </div></div>
+                    </div>
+                    <div class="card t-security">
+                        <div class="card-header">🛡️ Security Impact</div>
+                        <div class="card-body">
+                            <p><strong>Defense:</strong> RAM Scraping / Memory Scanning.</p>
+                            <p><strong>Why:</strong> The plaintext exists in exactly <strong>one</strong> location in memory, which is guarded, locked, and deterministically zeroed out immediately after use.</p>
+                        </div>
+                    </div>`
+            },
+            // 5. ENCAPSULATION
+            {
+                phase: "ENCRYPTION", badgeClass: "phase-enc",
+                title: "Hybrid Encapsulation",
+                cmd: "Negotiating...",
+                logs: [
+                    { type: "t-cry", text: "> Generating Ephemeral Kyber Keypair..." },
+                    { type: "t-cry", text: "[KEM] OQS_KEM_encaps() -> Shared Secret PQ" },
+                    { type: "t-cry", text: "[ECDH] crypto_scalarmult() -> Shared Secret CL" },
+                    { type: "t-sys", text: "[MEM] Secrets held in guarded memory." }
+                ],
+                html: `
+                    <div class="card t-concept">
+                        <div class="card-header">🧠 Concept: KEM</div>
+                        <div class="card-body"><p>We generate two shared secrets independently. One via Kyber (Quantum Safe) and one via X25519 (Classical Safe). The recipient needs their private key to recover these.</p></div>
+                    </div>
+                    <div class="card t-code">
+                        <div class="card-header">💾 C++ Code</div>
+                        <div class="card-body"><div class="code-wrap">
+<span class="c">// 1. Post-Quantum Secret</span>
+<span class="f">OQS_KEM_encaps</span>(kem, ct, ss_pq, recipient_kyber_pk);
+
+<span class="c">// 2. Classical Secret</span>
+<span class="f">crypto_scalarmult</span>(ss_cl, eph_sk, recipient_x25519_pk);
+                        </div></div>
+                    </div>
+                    <div class="card t-security">
+                        <div class="card-header">🛡️ Security Impact</div>
+                        <div class="card-body">
+                            <p><strong>Defense:</strong> Forward Secrecy.</p>
+                            <p><strong>Why:</strong> We use ephemeral keys for every message. This ensures that every encryption session uses a unique key.</p>
+                        </div>
+                    </div>`
+            },
+            // 6. ENCRYPTION FINAL
+            {
+                phase: "ENCRYPTION", badgeClass: "phase-enc",
+                title: "KDF & Encryption",
+                cmd: "Encrypting...",
+                logs: [
+                    { type: "t-cry", text: "[KDF] MasterKey = SHA256( SS_PQ || SS_CL )" },
+                    { type: "t-cry", text: "> Initializing XChaCha20-Poly1305..." },
+                    { type: "t-io", text: "> Outputting ASCII Armor..." },
+                    { type: "t-out", text: "-----BEGIN THERMO MESSAGE-----\nhQIMA+...[base64]..." }
+                ],
+                html: `
+                    <div class="card t-concept">
+                        <div class="card-header">🧠 Concept: Key Mixing</div>
+                        <div class="card-body"><p>We hash both secrets together. This ensures that if <strong>either</strong> algorithm remains secure, the Master Key is secure. We then use Authenticated Encryption (AEAD) to protect the payload.</p></div>
+                    </div>
+                    <div class="card t-code">
+                        <div class="card-header">💾 C++ Code</div>
+                        <div class="card-body"><div class="code-wrap">
+<span class="f">crypto_generichash_update</span>(&state, ss_pq, <span class="n">32</span>);
+<span class="f">crypto_generichash_update</span>(&state, ss_cl, <span class="n">32</span>);
+<span class="f">crypto_generichash_final</span>(&state, master_key, <span class="n">32</span>);
+
+<span class="f">crypto_secretstream_xchacha20poly1305_push</span>(...);
+                        </div></div>
+                    </div>
+                    <div class="card t-security">
+                        <div class="card-header">🛡️ Security Impact</div>
+                        <div class="card-body">
+                            <p><strong>Defense:</strong> Bit-Flipping / Chosen Ciphertext Attacks.</p>
+                            <p><strong>Why:</strong> Poly1305 creates an authentication tag. If an attacker flips a single bit in the ciphertext during transit, the decryption phase will detect the tag mismatch and refuse to output garbage.</p>
+                        </div>
+                    </div>`
+            },
+            // 7. CLEANUP
+            {
+                phase: "CLEANUP", badgeClass: "phase-enc",
+                title: "Secure Wipe",
+                cmd: "Terminating...",
+                logs: [
+                    { type: "t-sys", text: "[CLEANUP] sodium_memzero() executed on keys." },
+                    { type: "t-ok", text: "[EXIT] Process terminated safely." }
+                ],
+                html: `
+                    <div class="card t-concept">
+                        <div class="card-header">🧠 Concept: Data Sanitization</div>
+                        <div class="card-body"><p>The program outputs the ASCII Armored text. As the variables holding the keys go out of scope (C++ RAII), our custom destructor fires to wipe the memory.</p></div>
+                    </div>
+                    <div class="card t-code">
+                        <div class="card-header">💾 C++ Code (~SodiumAllocator)</div>
+                        <div class="card-body"><div class="code-wrap">
+<span class="k">void</span> <span class="f">deallocate</span>(T* p, <span class="t">size_t</span> n) {
+    <span class="c">// Explicitly overwrite memory with zeros</span>
+    <span class="f">sodium_memzero</span>(p, n * <span class="k">sizeof</span>(T)); 
+    
+    <span class="f">sodium_free</span>(p);
+}
+                        </div></div>
+                    </div>
+                    <div class="card t-security">
+                        <div class="card-header">🛡️ Security Impact</div>
+                        <div class="card-body">
+                            <p><strong>Defense:</strong> Data Remanence.</p>
+                            <p><strong>Why:</strong> Standard <code>free()</code> just marks memory as "available", leaving the secret key data intact in RAM until it's randomly overwritten. <code>sodium_memzero</code> actively destroys the data before release.</p>
+                        </div>
+                    </div>`
+            },
+            // 8. DECRYPT START
+            {
+                phase: "DECRYPTION", badgeClass: "phase-dec",
+                title: "Secure Read",
+                cmd: "./thermo_core --decrypt-armor",
+                logs: [
+                    { type: "t-io", text: "> Opening 'resonance.vault'..." },
+                    { type: "t-sys", text: "[IO] Checking file handle attributes (Windows/Linux)... OK." },
+                    { type: "t-out", text: "Enter password:" }
+                ],
+                html: `
+                    <div class="card t-concept">
+                        <div class="card-header">🧠 Concept: Handle verification</div>
+                        <div class="card-body"><p>When opening the private vault, we verify that the file handle is not a Reparse Point (Symlink) before reading data. This prevents us from reading the wrong file if an attacker manipulates the file system.</p></div>
+                    </div>
+                    <div class="card t-code">
+                        <div class="card-header">💾 C++ Code (Windows)</div>
+                        <div class="card-body"><div class="code-wrap">
+<span class="t">HANDLE</span> h = <span class="f">CreateFileA</span>(path...);
+<span class="f">GetFileInformationByHandle</span>(h, &info);
+
+<span class="k">if</span> (info.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
+    <span class="k">throw</span> <span class="f">runtime_error</span>(<span class="s">"Symlink detected!"</span>);
+                        </div></div>
+                    </div>
+                    <div class="card t-security">
+                        <div class="card-header">🛡️ Security Impact</div>
+                        <div class="card-body">
+                            <p><strong>Defense:</strong> Arbitrary File Read (via Symlinks).</p>
+                            <p><strong>Why:</strong> On Windows, "Junctions" can redirect file reads. By checking the handle attributes *after* opening, we ensure we are reading the actual vault file.</p>
+                        </div>
+                    </div>`
+            },
+            // 9. UNLOCK
+            {
+                phase: "DECRYPTION", badgeClass: "phase-dec",
+                title: "Unlocking Vault",
+                cmd: "*******",
+                logs: [
+                    { type: "t-cry", text: "[KDF] Argon2id: Deriving key from password..." },
+                    { type: "t-ok", text: "[AUTH] Poly1305 Tag Valid. Vault unlocked." },
+                    { type: "t-sys", text: "> Decrypted DEK (32 bytes) in RAM." },
+                    { type: "t-sys", text: "> Unlocked Kyber-768 Private Key." }
+                ],
+                html: `
+                    <div class="card t-concept">
+                        <div class="card-header">🧠 Concept: Authenticated Recovery</div>
+                        <div class="card-body"><p>We attempt to decrypt the sealed DEK using the password. If the password is wrong, the Poly1305 authentication tag check will fail immediately. This prevents loading corrupted garbage into memory.</p></div>
+                    </div>
+                    <div class="card t-code">
+                        <div class="card-header">💾 C++ Code</div>
+                        <div class="card-body"><div class="code-wrap">
+<span class="f">crypto_pwhash</span>(key, <span class="n">32</span>, password, ..., Argon2id);
+
+<span class="c">// Decrypt the DEK (Secretbox)</span>
+<span class="k">if</span> (<span class="f">crypto_secretbox_open_easy</span>(dek, sealed, nonce, key) != <span class="n">0</span>) {
+    <span class="k">throw</span> <span class="f">runtime_error</span>(<span class="s">"Wrong password!"</span>);
+}
+                        </div></div>
+                    </div>
+                    <div class="card t-security">
+                        <div class="card-header">🛡️ Security Impact</div>
+                        <div class="card-body">
+                            <p><strong>Defense:</strong> Fault Injection & Parser Exploits.</p>
+                            <p><strong>Why:</strong> By validating the vault's integrity tag *before* trusting the data, we prevent the application from parsing malformed key structures, which could lead to crashes or exploits.</p>
+                        </div>
+                    </div>`
+            },
+            // 10. DECAPSULATION
+            {
+                phase: "DECRYPTION", badgeClass: "phase-dec",
+                title: "Decapsulation",
+                cmd: "Processing...",
+                logs: [
+                    { type: "t-cry", text: "[KEM] OQS_KEM_decaps() -> Shared Secret PQ" },
+                    { type: "t-cry", text: "[ECDH] crypto_scalarmult() -> Shared Secret CL" },
+                    { type: "t-cry", text: "[KDF] Re-derived MasterKey." }
+                ],
+                html: `
+                    <div class="card t-concept">
+                        <div class="card-header">🧠 Concept: Inverse Handshake</div>
+                        <div class="card-body"><p>We use our private keys to reverse the KEM process. We decapsulate the Kyber ciphertext and compute the X25519 point multiplication. These must match exactly what the sender generated.</p></div>
+                    </div>
+                    <div class="card t-code">
+                        <div class="card-header">💾 C++ Code</div>
+                        <div class="card-body"><div class="code-wrap">
+<span class="c">// 1. Kyber Decapsulation</span>
+<span class="f">OQS_KEM_decaps</span>(kem, ss_pq, ciphertext, kyber_sk);
+
+<span class="c">// 2. X25519 ECDH</span>
+<span class="f">crypto_scalarmult</span>(ss_cl, eph_pk, x25519_sk);
+
+<span class="c">// 3. Re-mix</span>
+<span class="f">crypto_generichash</span>(..., master_key);
+                        </div></div>
+                    </div>
+                    <div class="card t-security">
+                        <div class="card-header">🛡️ Security Impact</div>
+                        <div class="card-body">
+                            <p><strong>Defense:</strong> Implicit Authentication.</p>
+                            <p><strong>Why:</strong> Only the holder of the correct Private Keys can derive the correct Shared Secrets. If the keys are wrong, the resulting Master Key will be garbage, and the final decryption step will fail safely.</p>
+                        </div>
+                    </div>`
+            },
+            // 11. VERIFY & OUTPUT
+            {
+                phase: "DECRYPTION", badgeClass: "phase-dec",
+                title: "Verification",
+                cmd: "Decrypting...",
+                logs: [
+                    { type: "t-ok", text: "[AUTH] crypto_secretstream_pull() ... OK." },
+                    { type: "t-out", text: "----------------\nTopSecret\n----------------" },
+                    { type: "t-sys", text: "[CLEANUP] sodium_memzero() executed." }
+                ],
+                html: `
+                    <div class="card t-concept">
+                        <div class="card-header">🧠 Concept: The Doom Principle</div>
+                        <div class="card-body"><p>Cryptography demands verification <em>before</em> processing. The decryption function validates the Poly1305 MAC tag before returning any plaintext. If the file was tampered with in transit (even 1 bit flipped), it throws an error instead of outputting data.</p></div>
+                    </div>
+                    <div class="card t-code">
+                        <div class="card-header">💾 C++ Code</div>
+                        <div class="card-body"><div class="code-wrap">
+<span class="c">// Decrypts AND verifies integrity</span>
+<span class="k">if</span> (<span class="f">crypto_secretstream_xchacha20poly1305_pull</span>(...) != <span class="n">0</span>) {
+    <span class="k">throw</span> <span class="f">runtime_error</span>(<span class="s">"Message forged!"</span>);
+}
+<span class="f">cout</span> << out;
+                        </div></div>
+                    </div>
+                    <div class="card t-security">
+                        <div class="card-header">🛡️ Security Impact</div>
+                        <div class="card-body">
+                            <p><strong>Defense:</strong> Oracle Padding Attacks & Manipulation.</p>
+                            <p><strong>Why:</strong> By strictly adhering to the "Doom Principle" (Authenticate then Decrypt), we ensure that no unauthenticated data ever reaches the application logic or user, preventing a vast class of cryptographic attacks.</p>
+                        </div>
+                    </div>`
+            }
+        ];
+
+        // --- ENGINE ---
+        let currentStep = 0;
+        const termContent = document.getElementById("term-content");
+        const nextBtn = document.getElementById("btn-next");
+        const infoTitle = document.getElementById("info-title");
+        const infoContent = document.getElementById("info-content");
+        const stepBadge = document.getElementById("step-badge");
+        const badge = document.getElementById("badge");
+
+        function getTime() {
+            const d = new Date();
+            return d.toISOString().split('T')[1].split('.')[0];
+        }
+
+        function scrollToBottom() {
+            const body = document.getElementById("term-body");
+            body.scrollTop = body.scrollHeight;
+        }
+
+        function typeWriter(text, element, speed = 3) {
+            return new Promise(resolve => {
+                let i = 0;
+                function type() {
+                    if (i < text.length) {
+                        element.textContent += text.charAt(i);
+                        scrollToBottom();
+                        i++;
+                        setTimeout(type, speed);
+                    } else {
+                        resolve();
+                    }
+                }
+                type();
+            });
+        }
+
+        async function nextStep() {
+            if (currentStep >= steps.length) return;
+            const step = steps[currentStep];
+            nextBtn.disabled = true;
+
+            // Update Info Pane
+            stepBadge.innerText = step.phase;
+            stepBadge.className = step.badgeClass; // Reset class
+            infoTitle.innerText = step.title;
+            infoContent.innerHTML = step.html;
+            
+            // Mobile Badge
+            if (window.innerWidth <= 900) { badge.style.display = 'inline-block'; }
+
+            // Terminal: Command
+            if (step.cmd && !step.cmd.includes("Generating") && !step.cmd.includes("Persisting") && !step.cmd.includes("Negotiating") && !step.cmd.includes("Encrypting") && !step.cmd.includes("Result") && !step.cmd.includes("Decrypting")) {
+                const line = document.createElement("div");
+                line.style.marginBottom = "5px";
+                line.innerHTML = `<span class="ts">[${getTime()}]</span> <span class="t-prompt">$</span> <span class="t-cmd">${step.cmd}</span>`;
+                termContent.appendChild(line);
+                scrollToBottom();
+            } else if (step.cmd && step.cmd.includes("***")) {
+                 const line = document.createElement("div");
+                 line.innerHTML = `<span class="t-cmd">${step.cmd}</span>`;
+                 termContent.appendChild(line);
+                 scrollToBottom();
+            }
+
+            // Terminal: Logs
+            for (let log of step.logs) {
+                const line = document.createElement("div");
+                line.innerHTML = `<span class="ts">[${getTime()}]</span> <span class="${log.type}"></span>`;
+                termContent.appendChild(line);
+                const span = line.querySelector('span:last-child');
+                await typeWriter(log.text, span, 3);
+            }
+            
+            const spacer = document.createElement("div");
+            spacer.style.height = "15px";
+            termContent.appendChild(spacer);
+            scrollToBottom();
+
+            currentStep++;
+            nextBtn.disabled = false;
+
+            if (currentStep < steps.length) nextBtn.innerHTML = "Next Step";
+            else {
+                nextBtn.innerText = "Simulation Complete";
+                nextBtn.disabled = true;
+            }
+        }
+
+        function resetSim() {
+            currentStep = 0;
+            termContent.innerHTML = '';
+            nextBtn.innerHTML = "Start Simulation";
+            nextBtn.disabled = false;
+            stepBadge.innerText = "System Idle";
+            stepBadge.className = "phase-init";
+            infoTitle.innerText = "Welcome";
+            infoContent.innerHTML = `
+                <div class="card t-concept">
+                    <div class="card-header">ℹ️ About</div>
+                    <div class="card-body">
+                        <p>This tool visualizes the internal logic of <strong>ThermoCrypt Lite</strong>. It simulates the exact C++ function calls, memory operations, and cryptographic handshakes used in the production code.</p>
+                        <p><strong>Instructions:</strong> Click "Start Simulation" to step through the lifecycle of a message.</p>
+                    </div>
+                </div>`;
+        }
+
+        // Mobile Tabs
+        function switchTab(tab) {
+            const sim = document.getElementById('sim-pane');
+            const info = document.getElementById('info-pane');
+            const bSim = document.getElementById('tab-sim');
+            const bInfo = document.getElementById('tab-info');
+
+            if (tab === 'sim') {
+                sim.style.display = 'flex'; info.style.display = 'none';
+                bSim.classList.add('active'); bInfo.classList.remove('active');
+            } else {
+                sim.style.display = 'none'; info.style.display = 'flex';
+                bSim.classList.remove('active'); bInfo.classList.add('active');
+                badge.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
