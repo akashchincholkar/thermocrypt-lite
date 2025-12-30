@@ -12,6 +12,15 @@ The system integrates **ML-KEM-768 (Kyber)** -- a Module-Lattice-based Key Encap
 
 > **PROJECT STATUS:** This repository is published as a static research artifact (v1.0.0). It serves as a reference implementation for Hybrid PQC combined with Hardware Binding logic.
 
+## 🧬 Architecture & Simulation
+
+Explore the internal logic of ThermoCrypt Lite through these interactive documentation tools:
+
+| Tool | Description | Link |
+| :--- | :--- | :--- |
+| **Architecture Map** | Interactive visualization of the system components, data flow, and security layers. | [**Open Map**](https://zeitge.github.io/thermocrypt-lite/architecture-map.html) |
+| **Simulator** | Deep-dive technical walkthrough of the C++ core execution (KeyGen -> Encrypt -> Decrypt). | [**Run Simulator**](https://zeitge.github.io/thermocrypt-lite/simulator.html) |
+
 ## Features
 
 * **📝 Secure Memo:** Encrypt/Decrypt text directly in RAM without writing plaintext to disk.
